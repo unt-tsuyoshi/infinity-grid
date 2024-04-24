@@ -1,0 +1,58 @@
+html,
+body {
+  height: 100%;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  // padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  font-family: var(--typo-font-plex-sans);
+  line-height: var(--typo-lh-base);
+  color: var(--color-text);
+  letter-spacing: var(--typo-space-normal);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+img,
+button {
+  vertical-align: bottom;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin-block: 0 0;
+}
+
+button {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+a {
+  text-decoration: none;
+  pointer-events: auto;
+}
+
+ul {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
