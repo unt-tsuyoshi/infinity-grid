@@ -122,7 +122,6 @@ const addGroup = () => {
         const clone = baseGrid.clone();
         clone.position.y = grid.position.y;
         clone.position.x = x;
-        console.log("right");
         grids.push(clone);
         scene.add(clone);
       }
@@ -140,7 +139,6 @@ const addGroup = () => {
         const clone = baseGrid.clone();
         clone.position.x = grid.position.x;
         clone.position.y = y;
-        console.log("top");
         grids.push(clone);
         scene.add(clone);
       }
@@ -165,13 +163,7 @@ const addGroup = () => {
   });
 };
 
-const rotateCard = (mouseX: number, mouseY: number) => {
-  const rotationX = ((mouseX / window.innerWidth) * Math.PI) / 2;
-  cards.map((card) => {
-    card.rotation.x = rotationX;
-  });
-};
-
+const rotateCard = () => {};
 const onMouseDown = (e: MouseEvent) => {
   isDrag = true;
   renderer.domElement.style.cursor = "grabbing";
@@ -186,19 +178,48 @@ const onMouseUp = (e: MouseEvent) => {
 };
 
 const onMouseMove = (e: MouseEvent) => {
-  rotateCard(e.clientX, e.clientY);
   if (!isDrag) return;
-  const deltaX = e.clientX - previousMousePosition.x;
-  const deltaY = -(e.clientY - previousMousePosition.y);
-  scrollParam.vec.x = deltaX;
-  scrollParam.vec.y = deltaY;
+  const normX = (e.clientX - previousMousePosition.x) / 80;
+  const normY = -(e.clientY - previousMousePosition.y) / 80;
+  let x = normX;
+  let y = normY;
+  if (x > 1) {
+    x = 1;
+  } else if (x < -1) {
+    x = -1;
+  }
+  if (y > 1) {
+    y = 1;
+  } else if (y < -1) {
+    y = -1;
+  }
+  scrollParam.vec.x = normX;
+  scrollParam.vec.y = normY;
   previousMousePosition.x = e.clientX;
   previousMousePosition.y = e.clientY;
 };
 
 const onWheel = (e: WheelEvent) => {
-  scrollParam.vec.x = e.deltaX * 0.25;
-  scrollParam.vec.y = e.deltaY * 0.25;
+  const normX = e.deltaX / window.innerWidth;
+  const normY = e.deltaY / window.innerHeight;
+  let x = 0;
+  let y = 0;
+  if (normX > 0) {
+    x = normX + 0.5;
+  } else if (normX < 0) {
+    x = normX - 0.5;
+  } else {
+    x = 0;
+  }
+  if (normY > 0) {
+    y = normY + 0.5;
+  } else if (normY < 0) {
+    y = normY - 0.5;
+  } else {
+    y = 0;
+  }
+  scrollParam.vec.x = x;
+  scrollParam.vec.y = y;
 };
 
 const onResize = () => {
@@ -211,15 +232,17 @@ const onResize = () => {
 };
 
 const tick = () => {
+  const scrollScalor = 90;
   scrollParam.vec.x *= damping;
   scrollParam.vec.y *= damping;
-  if (Math.abs(scrollParam.vec.x) < 0.05) scrollParam.vec.x = 0;
-  if (Math.abs(scrollParam.vec.y) < 0.05) scrollParam.vec.y = 0;
-  camera.position.x = camera.position.x - scrollParam.vec.x;
-  camera.position.y = camera.position.y - scrollParam.vec.y;
-  scrollParam.total.x -= scrollParam.vec.x;
-  scrollParam.total.y -= scrollParam.vec.y;
+  if (Math.abs(scrollParam.vec.x) < 0.01) scrollParam.vec.x = 0;
+  if (Math.abs(scrollParam.vec.y) < 0.01) scrollParam.vec.y = 0;
+  camera.position.x = camera.position.x - scrollParam.vec.x * scrollScalor;
+  camera.position.y = camera.position.y - scrollParam.vec.y * scrollScalor;
+  scrollParam.total.x -= scrollParam.vec.x * scrollScalor;
+  scrollParam.total.y -= scrollParam.vec.y * scrollScalor;
   addGroup();
+  rotateCard();
   renderer.render(scene, camera);
   requestAnimationFrame(tick);
 };
