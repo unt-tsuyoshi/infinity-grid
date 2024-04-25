@@ -7,6 +7,21 @@ type Card = {
   >;
   id: number;
 };
+
+type ScrollParam = {
+  vec: THREE.Vector2;
+  total: THREE.Vector2;
+  gridPos: THREE.Vector2;
+  dir: "left" | "right" | "bottom" | "top";
+};
+
+type Edge = {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+};
+
 const initWidth = window.innerWidth;
 const initHeight = window.innerHeight;
 const renderer = new THREE.WebGLRenderer();
@@ -16,17 +31,27 @@ const gap = 40; // カード同士の間隔
 const cardWidth = 300; // カードの横幅
 const cardHeight = 400; // カードの縦幅
 const cards: Array<Card> = [];
-let grid: THREE.Group<THREE.Object3DEventMap>;
+const grids: THREE.Group<THREE.Object3DEventMap> = new THREE.Group();
+const grid: THREE.Group<THREE.Object3DEventMap> = new THREE.Group();
 let gridWidth: number;
 let gridHeight: number;
 let isDrag = false;
 const damping = 0.9;
-const scrollVec = {
-  x: 0,
-  y: 0,
+
+const scrollParam: ScrollParam = {
+  vec: new THREE.Vector2(),
+  total: new THREE.Vector2(),
+  gridPos: new THREE.Vector2(),
+  dir: "right",
 };
-const mouse = new THREE.Vector2();
-const frustum = new THREE.Frustum();
+
+const edge: Edge = {
+  left: 0,
+  right: 0,
+  top: 0,
+  bottom: 0,
+};
+
 const previousMousePosition = { x: 0, y: 0 };
 
 const init = () => {
@@ -41,8 +66,6 @@ const init = () => {
 const createCards = () => {
   const cols = Math.floor((window.innerWidth - gap) / (cardWidth + gap)) + 4;
   const rows = Math.floor((window.innerHeight - gap) / (cardHeight + gap)) + 4;
-  const group = new THREE.Group();
-
   let id = 0;
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
@@ -60,17 +83,22 @@ const createCards = () => {
   }
   gridWidth = cols * (cardWidth + gap) - gap;
   gridHeight = rows * (cardHeight + gap) - gap;
-  group.position.x = -(cols * (cardWidth + gap) - cardWidth) / 2;
-  group.position.y = -(rows * (cardHeight + gap) - cardHeight) / 2;
-
-  group.userData.width = gridWidth;
-  group.userData.height = gridHeight;
-  grid = group;
+  camera.position.x = (cols * (cardWidth + gap) - cardWidth) / 2;
+  camera.position.y = (rows * (cardHeight + gap) - cardHeight) / 2;
+  grid.userData.width = gridWidth;
+  grid.userData.height = gridHeight;
   cards.map((card) => {
-    group.add(card.mesh);
+    grid.add(card.mesh);
   });
-  scene.add(group);
+  grids.add(grid);
+  scene.add(grid);
+  scrollParam.total.x = (cols * (cardWidth + gap) - cardWidth) / 2;
+  scrollParam.total.y = (rows * (cardHeight + gap) - cardHeight) / 2;
 };
+
+const checkViewport = () => {};
+
+const setPosition = () => {};
 
 const addGroup = () => {};
 
@@ -91,15 +119,15 @@ const onMouseMove = (e: MouseEvent) => {
   if (!isDrag) return;
   const deltaX = e.clientX - previousMousePosition.x;
   const deltaY = -(e.clientY - previousMousePosition.y);
-  scrollVec.x = deltaX;
-  scrollVec.y = deltaY;
+  scrollParam.vec.x = deltaX;
+  scrollParam.vec.y = deltaY;
   previousMousePosition.x = e.clientX;
   previousMousePosition.y = e.clientY;
 };
 
 const onWheel = (e: WheelEvent) => {
-  scrollVec.x = e.deltaX * 0.25;
-  scrollVec.y = e.deltaY * 0.25;
+  scrollParam.vec.x = e.deltaX * 0.25;
+  scrollParam.vec.y = e.deltaY * 0.25;
 };
 
 const onResize = () => {
@@ -112,26 +140,15 @@ const onResize = () => {
 };
 
 const tick = () => {
-  frustum.setFromProjectionMatrix(
-    new THREE.Matrix4().multiplyMatrices(
-      camera.projectionMatrix,
-      camera.matrixWorldInverse
-    )
-  );
-  scene.traverse((object) => {
-    if (object instanceof THREE.Mesh) {
-      if (!frustum.intersectsObject(object)) {
-        object.visible = false;
-      }
-    }
-  });
-  const gridWorld = grid.getWorldPosition(new THREE.Vector3());
-  scrollVec.x *= damping;
-  scrollVec.y *= damping;
-  if (Math.abs(scrollVec.x) < 0.05) scrollVec.x = 0;
-  if (Math.abs(scrollVec.y) < 0.05) scrollVec.y = 0;
-  grid.position.x = gridWorld.x + scrollVec.x;
-  grid.position.y = gridWorld.y + scrollVec.y;
+  scrollParam.vec.x *= damping;
+  scrollParam.vec.y *= damping;
+  if (Math.abs(scrollParam.vec.x) < 0.05) scrollParam.vec.x = 0;
+  if (Math.abs(scrollParam.vec.y) < 0.05) scrollParam.vec.y = 0;
+  camera.position.x = camera.position.x - scrollParam.vec.x;
+  camera.position.y = camera.position.y - scrollParam.vec.y;
+  scrollParam.total.x += scrollParam.vec.x;
+  scrollParam.total.y += scrollParam.vec.y;
+  addGroup();
   renderer.render(scene, camera);
   requestAnimationFrame(tick);
 };
