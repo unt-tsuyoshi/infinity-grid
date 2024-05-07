@@ -222,6 +222,11 @@
   resolved "https://registry.yarnpkg.com/@types/estree/-/estree-1.0.5.tgz#a6ce3e556e00fd9895dd872dd172ad0d4bd687f4"
   integrity sha512-/kYRxGDLWzHOB7q+wtSUQlFrtcdUccpfy+X+9iMBpHK8QLLhx2wIPYuS5DYtR9Wa/YlZAbIovy7qVdB1Aq6Lyw==
 
+"@types/normalize-wheel@^1.0.4":
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/@types/normalize-wheel/-/normalize-wheel-1.0.4.tgz#708f2dd9da33a5aa181f6e2eec06a74e04bb9d81"
+  integrity sha512-iclKEmOclXH2LGVkMkdal0+ffJphB3kbazakec96z1hW/CfJYmsZNFYLAmkpzePxKoKewXp2HSlsN6G4SG0b0g==
+
 "@types/stats.js@*":
   version "0.17.3"
   resolved "https://registry.yarnpkg.com/@types/stats.js/-/stats.js-0.17.3.tgz#705446e12ce0fad618557dd88236f51148b7a935"
@@ -501,6 +506,11 @@ to-regex-range@^5.0.1:
   integrity sha512-65P7iz6X5yEr1cwcgvQxbbIw7Uk3gOy5dIdtZ4rDveLqhrdJP+Li/Hx6tyK0NEb+2GCyneCMJiGqrADCSNk8sQ==
   dependencies:
     is-number "^7.0.0"
+
+tween.js@^16.6.0:
+  version "16.6.0"
+  resolved "https://registry.yarnpkg.com/tween.js/-/tween.js-16.6.0.tgz#739104c9336cc4f11ee53f9ce7cede51e6723624"
+  integrity sha512-IIhm0VsiBxNJO+WsXUvjcq+u3sKfOwSu67Yh9T5xSpXb2eHHi9+uZDDGBc7uMXjfud0bYiLkYCEb7JXIGXi5KA==
 
 typescript@^5.2.2:
   version "5.4.5"

@@ -1,3 +1,4 @@
+import normalizeWheel from "normalize-wheel";
 import * as THREE from "three";
 
 type ScrollParam = {
@@ -10,9 +11,11 @@ const initHeight = window.innerHeight;
 const renderer = new THREE.WebGLRenderer();
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(45, initWidth / initHeight);
-const gap = 40; // カード同士の間隔
-const cardWidth = 300; // カードの横幅
-const cardHeight = 400; // カードの縦幅
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+const gap = 60; // カード同士の間隔
+const cardWidth = 400; // カードの横幅
+const cardHeight = 540; // カードの縦幅
 const cards: Array<
   THREE.Mesh<
     THREE.PlaneGeometry,
@@ -45,21 +48,29 @@ const init = () => {
 };
 
 const createCards = () => {
-  const cols = Math.floor((window.innerWidth - gap) / (cardWidth + gap)) + 4;
-  const rows = Math.floor((window.innerHeight - gap) / (cardHeight + gap)) + 4;
+  const cols = Math.floor((window.innerWidth - gap) / (cardWidth + gap)) + 2;
+  const rows = Math.floor((window.innerHeight - gap) / (cardHeight + gap)) + 2;
   let id = 0;
+  let textureCount = 1;
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
       const geometry = new THREE.PlaneGeometry(cardWidth, cardHeight);
+      const path =
+        textureCount > 9
+          ? "/texture" + textureCount + ".jpg"
+          : "/texture0" + textureCount + ".jpg";
+      const texture = new THREE.TextureLoader().load(path);
       const material = new THREE.MeshBasicMaterial({
         color: 0xffffff,
         side: THREE.DoubleSide,
+        map: texture,
       });
       const plane = new THREE.Mesh(geometry, material);
       plane.position.x = col * (cardWidth + gap) + gap / 2;
       plane.position.y = row * (cardHeight + gap) + gap / 2;
       cards.push(plane);
       id++;
+      textureCount++;
     }
   }
   gridWidth = cols * (cardWidth + gap) - gap;
@@ -163,7 +174,6 @@ const addGroup = () => {
   });
 };
 
-const rotateCard = () => {};
 const onMouseDown = (e: MouseEvent) => {
   isDrag = true;
   renderer.domElement.style.cursor = "grabbing";
@@ -172,12 +182,27 @@ const onMouseDown = (e: MouseEvent) => {
   previousMousePosition.y = e.clientY;
 };
 
-const onMouseUp = (e: MouseEvent) => {
+const onMouseUp = () => {
   isDrag = false;
   renderer.domElement.style.cursor = "auto";
 };
 
 const onMouseMove = (e: MouseEvent) => {
+  // マウス座標を正規化（-1から1の範囲に変換）
+  mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+  raycaster.setFromCamera(mouse, camera);
+  const intersects = raycaster.intersectObjects(grids, true);
+
+  if (intersects.length > 0 && !isDrag) {
+    // カードにホバーしている場合
+    renderer.domElement.style.cursor = "pointer";
+  } else if (!isDrag) {
+    // カードにホバーしていない場合
+    renderer.domElement.style.cursor = "auto";
+  }
+
   if (!isDrag) return;
   const normX = (e.clientX - previousMousePosition.x) / 80;
   const normY = -(e.clientY - previousMousePosition.y) / 80;
@@ -198,28 +223,37 @@ const onMouseMove = (e: MouseEvent) => {
   previousMousePosition.x = e.clientX;
   previousMousePosition.y = e.clientY;
 };
-
 const onWheel = (e: WheelEvent) => {
-  const normX = e.deltaX / window.innerWidth;
-  const normY = e.deltaY / window.innerHeight;
-  let x = 0;
-  let y = 0;
-  if (normX > 0) {
-    x = normX + 0.5;
-  } else if (normX < 0) {
-    x = normX - 0.5;
-  } else {
-    x = 0;
-  }
-  if (normY > 0) {
-    y = normY + 0.5;
-  } else if (normY < 0) {
-    y = normY - 0.5;
-  } else {
-    y = 0;
-  }
-  scrollParam.vec.x = x;
-  scrollParam.vec.y = y;
+  const normWheel = normalizeWheel(e);
+  const pixelX = normWheel.pixelX;
+  const pixelY = normWheel.pixelY;
+  let normX = (pixelX * 4) / window.innerWidth;
+  let normY = (pixelY * 4) / window.innerHeight;
+  normX = Math.max(-1, Math.min(1, normX));
+  normY = Math.max(-1, Math.min(1, normY));
+  scrollParam.vec.x = normX;
+  scrollParam.vec.y = normY;
+};
+
+const rotateCards = () => {
+  const maxAngleRad = (45 * Math.PI) / 180; // 45度をラジアンに変換
+  const rotationFactor = 1.0; // 回転量を調整する係数（0.0 ~ 1.0）
+
+  const rotationX = Math.max(
+    -maxAngleRad,
+    Math.min(maxAngleRad, -scrollParam.vec.y * rotationFactor)
+  );
+  const rotationY = Math.max(
+    -maxAngleRad,
+    Math.min(maxAngleRad, scrollParam.vec.x * rotationFactor)
+  );
+
+  grids.forEach((grid) => {
+    grid.children.forEach((card) => {
+      card.rotation.x = rotationX;
+      card.rotation.y = rotationY;
+    });
+  });
 };
 
 const onResize = () => {
@@ -231,8 +265,20 @@ const onResize = () => {
   camera.updateProjectionMatrix();
 };
 
+const easeInOutQuad = (t: number, b: number, c: number, d: number) => {
+  t /= d / 2;
+  if (t < 1) return (c / 2) * t * t + b;
+  t--;
+  return (-c / 2) * (t * (t - 2) - 1) + b;
+};
+
+// const easeOutQuad = (t: number, b: number, c: number, d: number) => {
+//   t /= d;
+//   return -c * t * (t - 2) + b;
+// };
+
 const tick = () => {
-  const scrollScalor = 90;
+  const scrollScalor = 75;
   scrollParam.vec.x *= damping;
   scrollParam.vec.y *= damping;
   if (Math.abs(scrollParam.vec.x) < 0.01) scrollParam.vec.x = 0;
@@ -241,8 +287,39 @@ const tick = () => {
   camera.position.y = camera.position.y - scrollParam.vec.y * scrollScalor;
   scrollParam.total.x -= scrollParam.vec.x * scrollScalor;
   scrollParam.total.y -= scrollParam.vec.y * scrollScalor;
+
+  raycaster.setFromCamera(mouse, camera);
+  const intersects = raycaster.intersectObjects(grids, true);
+
+  grids.forEach((grid) => {
+    grid.children.forEach((card) => {
+      if (intersects.length > 0 && card === intersects[0].object) {
+        if (!card.userData.hoverStartTime) {
+          card.userData.hoverStartTime = performance.now();
+        }
+        const startZ = card.position.z;
+        const endZ = 100;
+        const duration = 400;
+        const elapsed = performance.now() - card.userData.hoverStartTime;
+        const progress = Math.min(elapsed / duration, 1);
+        card.position.z = easeInOutQuad(progress, startZ, endZ - startZ, 1);
+      } else {
+        if (card.userData.hoverStartTime) {
+          card.userData.hoverEndTime = performance.now();
+          card.userData.hoverStartTime = 0;
+        }
+        const startZ = card.position.z;
+        const endZ = 0;
+        const duration = 400;
+        const elapsed = performance.now() - (card.userData.hoverEndTime || 0);
+        const progress = Math.min(elapsed / duration, 1);
+        card.position.z = easeInOutQuad(progress, startZ, endZ - startZ, 1);
+      }
+    });
+  });
+
   addGroup();
-  rotateCard();
+  rotateCards();
   renderer.render(scene, camera);
   requestAnimationFrame(tick);
 };
