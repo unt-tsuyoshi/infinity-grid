@@ -57,8 +57,8 @@ const createCards = () => {
       const geometry = new THREE.PlaneGeometry(cardWidth, cardHeight);
       const path =
         textureCount > 9
-          ? "/infinity-grid.github.io/texture" + textureCount + ".jpg"
-          : "/infinity-grid.github.io/texture0" + textureCount + ".jpg";
+          ? "/infinity-grid/texture" + textureCount + ".jpg"
+          : "/infinity-grid/texture0" + textureCount + ".jpg";
       const texture = new THREE.TextureLoader().load(path);
       const material = new THREE.MeshBasicMaterial({
         color: 0xffffff,

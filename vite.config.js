@@ -1,3 +1,3 @@
 export default {
-  base: "/infinity-grid.github.io/",
+  base: "/infinity-grid/",
 };
